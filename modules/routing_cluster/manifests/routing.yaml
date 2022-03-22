@@ -1,0 +1,28 @@
+%{ for target in allocation_targets }
+apiVersion: v1
+kind: Secret
+metadata:
+  name: allocator-client-to-${target.cluster_name}
+  namespace: ${namespace}
+type: Opaque
+data:
+  tls.crt: ${target.tls_crt}
+  tls.key: ${target.tls_key}
+  ca.crt: ${target.ca_crt}
+---
+apiVersion: multicluster.agones.dev/v1
+kind: GameServerAllocationPolicy
+metadata:
+  name: allocator-${target.cluster_name}
+  namespace: ${namespace}
+spec:
+  connectionInfo:
+    allocationEndpoints:
+    - ${target.endpoint}
+    clusterName: ${target.cluster_name}
+    namespace: ${target.gameserver_namespace}
+    secretName: allocator-client-to-${target.cluster_name}
+  priority: 1
+  weight: 100
+---
+%{ endfor }

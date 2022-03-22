@@ -1,0 +1,170 @@
+{
+    "widgets": [
+        {
+            "height": 6,
+            "width": 12,
+            "y": 5,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "ContainerInsights", "node_cpu_utilization", "NodeGroupName", "eks-gameserver", "ClusterName", "dgs01", { "label": "dgs01 eks-gameserver", "yAxis": "right" } ],
+                    [ "...", "eks-agones-system", ".", "." ],
+                    [ "...", "eks-gameserver", ".", "dgs02", { "yAxis": "right" } ],
+                    [ "...", "eks-agones-system", ".", "." ],
+                    [ "...", "router" ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-2",
+                "period": 60,
+                "stat": "Maximum",
+                "title": "Node CPU usage (max)"
+            }
+        },
+        {
+            "height": 5,
+            "width": 9,
+            "y": 0,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ { "expression": "m1+m2", "label": "#Total", "id": "e1", "yAxis": "left", "period": 60, "region": "us-west-2", "stat": "Maximum" } ],
+                    [ { "expression": "m3+m4", "label": "#Allocated", "id": "e3", "region": "us-west-2", "stat": "Maximum" } ],
+                    [ "ContainerInsights", "agones_fleets_replicas_count", "ClusterName", "dgs01", "type", "total", { "id": "m1", "visible": false } ],
+                    [ "...", "dgs02", ".", ".", { "id": "m2", "visible": false } ],
+                    [ "...", "dgs01", ".", "allocated", { "id": "m3", "visible": false } ],
+                    [ ".", "agones_gameservers_count", ".", "dgs02", ".", "Allocated", { "id": "m4", "visible": false } ]
+                ],
+                "sparkline": true,
+                "view": "singleValue",
+                "region": "us-west-2",
+                "stat": "Maximum",
+                "period": 60,
+                "title": "Number of DGS pods"
+            }
+        },
+        {
+            "height": 5,
+            "width": 7,
+            "y": 0,
+            "x": 9,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ { "expression": "m1+m2", "label": "#Total", "id": "e1", "yAxis": "left", "period": 60, "region": "us-west-2", "visible": false, "stat": "Maximum" } ],
+                    [ { "expression": "m3+m4", "label": "#Allocated", "id": "e3", "region": "us-west-2", "visible": false, "stat": "Maximum" } ],
+                    [ { "expression": "(e3/e1)*100", "label": "Allocated ratio", "id": "e2", "period": 60, "region": "us-west-2", "stat": "Maximum" } ],
+                    [ "ContainerInsights", "agones_fleets_replicas_count", "ClusterName", "dgs01", "type", "total", { "id": "m1", "visible": false } ],
+                    [ "...", "dgs02", ".", ".", { "id": "m2", "visible": false } ],
+                    [ "...", "dgs01", ".", "allocated", { "id": "m3", "visible": false } ],
+                    [ ".", "agones_gameservers_count", ".", "dgs02", ".", "Allocated", { "id": "m4", "visible": false } ]
+                ],
+                "sparkline": true,
+                "view": "gauge",
+                "region": "us-west-2",
+                "stat": "Maximum",
+                "period": 60,
+                "title": "Allocated ratio (%)",
+                "yAxis": {
+                    "left": {
+                        "min": 0,
+                        "max": 100
+                    }
+                },
+                "legend": {
+                    "position": "hidden"
+                }
+            }
+        },
+        {
+            "height": 5,
+            "width": 8,
+            "y": 0,
+            "x": 16,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "ContainerInsights", "cluster_node_count", "ClusterName", "dgs01", { "yAxis": "right", "id": "m4" } ],
+                    [ "...", "dgs02", { "yAxis": "right", "id": "m5" } ],
+                    [ "...", "router", { "yAxis": "right", "id": "m6" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-2",
+                "period": 60,
+                "stat": "Average",
+                "title": "Number of Nodes"
+            }
+        },
+        {
+            "height": 6,
+            "width": 12,
+            "y": 11,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "ContainerInsights", "pod_cpu_utilization", "PodName", "agones-allocator", "ClusterName", "dgs01", "Namespace", "agones-system" ],
+                    [ "...", "agones-controller", ".", ".", ".", "." ],
+                    [ "...", "dgs-fleet", ".", ".", ".", "default" ],
+                    [ "...", "agones-allocator", ".", "dgs02", ".", "agones-system" ],
+                    [ "...", "agones-controller", ".", ".", ".", "." ],
+                    [ "...", "dgs-fleet", ".", ".", ".", "default" ],
+                    [ "...", "agones-allocator", ".", "router", ".", "agones-system" ],
+                    [ "...", "agones-controller", ".", ".", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-2",
+                "period": 60,
+                "stat": "Average"
+            }
+        },
+        {
+            "height": 6,
+            "width": 12,
+            "y": 11,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "ContainerInsights", "pod_memory_utilization", "PodName", "agones-allocator", "ClusterName", "dgs01", "Namespace", "agones-system" ],
+                    [ "...", "agones-controller", ".", ".", ".", "." ],
+                    [ "...", "dgs-fleet", ".", ".", ".", "default" ],
+                    [ "...", "agones-allocator", ".", "dgs02", ".", "agones-system" ],
+                    [ "...", "agones-controller", ".", ".", ".", "." ],
+                    [ "...", "dgs-fleet", ".", ".", ".", "default" ],
+                    [ "...", "agones-allocator", ".", "router", ".", "agones-system" ],
+                    [ "...", "agones-controller", ".", ".", ".", "." ]
+                ],
+                "region": "us-west-2"
+            }
+        },
+        {
+            "height": 6,
+            "width": 12,
+            "y": 5,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "ContainerInsights", "node_memory_utilization", "NodeGroupName", "eks-gameserver", "ClusterName", "dgs01", { "yAxis": "left" } ],
+                    [ "...", "eks-agones-system", ".", ".", { "yAxis": "left" } ],
+                    [ "...", "eks-gameserver", ".", "dgs02", { "yAxis": "left" } ],
+                    [ "...", "eks-agones-system", ".", ".", { "yAxis": "left" } ],
+                    [ "...", "router", { "yAxis": "left" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-2",
+                "period": 60,
+                "stat": "Maximum",
+                "title": "Node RAM usage (max)"
+            }
+        }
+    ]
+}

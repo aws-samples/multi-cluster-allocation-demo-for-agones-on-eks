@@ -1,0 +1,45 @@
+# https://agones.dev/site/docs/reference/fleet/
+apiVersion: "agones.dev/v1"
+kind: Fleet
+metadata:
+  name: dgs-fleet
+spec:
+  scheduling: Packed
+  template:
+    spec:
+      container: dgs
+      ports:
+      - name: default
+        containerPort: 7654
+        protocol: TCPUDP
+      template:
+        spec:
+          nodeSelector:
+            usage: gameserver
+          tolerations:
+          - key: "gameserver"
+            operator: "Exists"
+            effect: "NoExecute"
+          containers:
+          - name: dgs
+            image: gcr.io/agones-images/simple-game-server:0.6
+            args: ["7654", "true"]
+            env:
+            resources:
+              requests:
+                memory: "64Mi"
+                cpu: "50m"
+---
+# https://agones.dev/site/docs/reference/fleetautoscaler/
+apiVersion: "autoscaling.agones.dev/v1"
+kind: FleetAutoscaler
+metadata:
+  name: dgs-autoscaler
+spec:
+  fleetName: dgs-fleet
+  policy:
+    type: Buffer
+    buffer:
+      bufferSize: 25%
+      minReplicas: 5
+      maxReplicas: 100

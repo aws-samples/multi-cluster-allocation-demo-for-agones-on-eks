@@ -1,0 +1,332 @@
+# create cwagent service account and role binding
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ${service_account_name}
+  namespace: ${namespace}
+  annotations:
+    eks.amazonaws.com/role-arn: ${role_arn}
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aoc-agent-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "nodes", "endpoints"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["list", "watch"]
+  - apiGroups: [""]
+    resources: ["nodes/proxy"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["nodes/stats", "configmaps", "events"]
+    verbs: ["create", "get"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["otel-container-insight-clusterleader"]
+    verbs: ["get","update"]
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aoc-agent-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: ${service_account_name}
+    namespace: ${namespace}
+roleRef:
+  kind: ClusterRole
+  name: aoc-agent-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # Pass a hash to make sure pods are restarted when this configMap is changed
+  name: otel-agent-conf-${hash}
+  namespace: ${namespace}
+  labels:
+    app: opentelemetry
+    component: otel-agent-conf
+data:
+  # Pass extracfg.txt to set otel log level
+  # https://github.com/aws-observability/aws-otel-collector/blob/v0.16.0/pkg/extraconfig/extraconfig.go
+  otel-agent-extracfg: |
+    loggingLevel=ERROR
+  otel-agent-config: |
+    extensions:
+      health_check:
+
+    receivers:
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/awscontainerinsightreceiver
+      awscontainerinsightreceiver:
+
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/prometheusreceiver
+      prometheus:
+        config:
+          # https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+          scrape_configs:
+            - job_name: 'otel-collector'
+              scrape_interval: 60s
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                # Extract Prometheus endpoint from Pods' annotations
+                # https://github.com/prometheus/prometheus/blob/v2.33.4/documentation/examples/prometheus-kubernetes.yml#L157-L178
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+                  regex: true
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  action: replace
+                  target_label: __metrics_path__
+                  regex: (.+)
+                - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                  action: replace
+                  regex: ([^:]+)(?::\d+)?;(\d+)
+                  replacement: $$1:$$2
+                  target_label: __address__
+
+                # Set labels same as awscontainerinsightreceiver
+                - source_labels: [__meta_kubernetes_namespace]
+                  action: replace
+                  target_label: Namespace
+                - source_labels: [__meta_kubernetes_pod_node_name]
+                  action: replace
+                  target_label: NodeName
+                - source_labels: [__meta_kubernetes_pod_name]
+                  action: replace
+                  target_label: PodName
+                # Pass cluster name because it is not available in __meta labels
+                # https://albersdevelopment.net/2019/08/28/prometheus-adding-a-label-to-a-target/
+                - source_labels: [__address__]
+                  target_label: ClusterName
+                  replacement: "${cluster_name}"
+                # Set container name as service name 
+                - source_labels: [__meta_kubernetes_pod_container_name]
+                  action: replace
+                  target_label: Service
+
+    # You can refer to this article to optimize your otel setting
+    # https://aws.amazon.com/blogs/containers/cost-savings-by-customizing-metrics-sent-by-container-insights-in-amazon-eks/
+    processors:
+      resource:
+        attributes:
+        - key: Sources
+          action: delete
+        - key: kubernetes
+          action: delete
+        # Replace gameserver pod names to a common name, because otherwise too many metrics are created.
+        # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.45.1/processor/attributesprocessor/testdata/config.yaml#L24-L41
+        - key: PodName
+          action: extract
+          pattern: "(?P<PodName>dgs-fleet).*"
+        # By default Agones fleet pods do not have Service attribute, adding explicitly here
+        - key: PodName
+          action: extract
+          pattern: "(?P<Service>dgs-fleet).*"
+        - key: AutoScalingGroupName
+          action: extract
+          # Extract a prefix of AutoScalingGroupName (it has Terraform generated suffix starting with numbers)
+          pattern: "(?P<NodeGroupName>.*?)-[0-9]{6,}.*"
+        
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor
+      filter/exclude:
+        metrics:
+          exclude:
+            match_type: regexp
+            metric_names:
+              - container_.*
+              - agones_k8s_.*
+              - agones_grpc_.*
+              - go_.*
+              - redis_.*
+
+      batch/metrics:
+        timeout: 60s
+
+    exporters:
+      # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/awsemfexporter
+      awsemf:
+        namespace: ContainerInsights
+        log_group_name: '/aws/containerinsights/{ClusterName}/performance'
+        log_stream_name: '{NodeName}'
+        resource_to_telemetry_conversion:
+          enabled: true
+        dimension_rollup_option: NoDimensionRollup
+        parse_json_encoded_attr_values: [Sources, kubernetes]
+        metric_declarations:
+          # node metrics
+          - dimensions: [[NodeGroupName, ClusterName]]
+            metric_name_selectors:
+              - node_cpu_utilization
+              - node_memory_utilization
+              - node_network_total_bytes
+              - node_cpu_reserved_capacity
+              - node_memory_reserved_capacity
+              - node_number_of_running_pods
+              - node_number_of_running_containers
+
+          # pod metrics
+          - dimensions: [[PodName, Namespace, ClusterName], [Service, Namespace, ClusterName]]
+            metric_name_selectors:
+              - pod_cpu_utilization
+              - pod_memory_utilization
+              - pod_network_rx_bytes
+              - pod_network_tx_bytes
+              - pod_cpu_utilization_over_pod_limit
+              - pod_memory_utilization_over_pod_limit
+          - dimensions: [[PodName, Namespace, ClusterName]]
+            metric_name_selectors:
+              - pod_cpu_reserved_capacity
+              - pod_memory_reserved_capacity
+          - dimensions: [[PodName, Namespace, ClusterName]]
+            metric_name_selectors:
+              - pod_number_of_container_restarts
+
+          # cluster metrics
+          - dimensions: [[ClusterName]]
+            metric_name_selectors:
+              - cluster_node_count
+              - cluster_failed_node_count
+              - agones_fleet_autoscalers_current_replicas_count
+
+          # service metrics
+          - dimensions: [[Service, Namespace, ClusterName]]
+            metric_name_selectors:
+              - service_number_of_running_pods
+
+          # namespace metrics
+          - dimensions: [[Namespace, ClusterName]]
+            metric_name_selectors:
+              - namespace_number_of_running_pods
+          
+          # agones metrics
+          # https://agones.dev/site/docs/guides/metrics/
+          - dimensions: [[type, ClusterName]]
+            metric_name_selectors:
+              - agones_fleets_replicas_count
+              - agones_gameservers_count
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [awscontainerinsightreceiver, prometheus]
+          processors: [filter/exclude, resource, batch/metrics]
+          exporters: [awsemf]
+
+      extensions: [health_check]
+
+
+---
+# create Daemonset
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: aws-otel-eks-ci
+  namespace: ${namespace}
+spec:
+  selector:
+    matchLabels:
+      name: aws-otel-eks-ci
+  template:
+    metadata:
+      labels:
+        name: aws-otel-eks-ci
+    spec:
+      containers:
+        - name: aws-otel-collector
+          image: amazon/aws-otel-collector:v0.16.0
+          env:
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: HOST_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K8S_NAMESPACE
+              valueFrom:
+                 fieldRef:
+                   fieldPath: metadata.namespace
+          imagePullPolicy: Always
+          command:
+            - "/awscollector"
+            - "--config=/conf/otel-agent-config.yaml"
+          volumeMounts:
+            - name: rootfs
+              mountPath: /rootfs
+              readOnly: true
+            - name: dockersock
+              mountPath: /var/run/docker.sock
+              readOnly: true
+            - name: varlibdocker
+              mountPath: /var/lib/docker
+              readOnly: true
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+            - name: devdisk
+              mountPath: /dev/disk
+              readOnly: true
+            - name: otel-agent-config-vol
+              mountPath: /conf
+            - name: otel-agent-extracfg-vol
+              mountPath: /opt/aws/aws-otel-collector/etc/
+          resources:
+            limits:
+              cpu:  200m
+              memory: 200Mi
+            requests:
+              cpu: 200m
+              memory: 200Mi
+      volumes:
+        - name: otel-agent-config-vol
+          configMap:
+            name: otel-agent-conf-${hash}
+            items:
+              - key: otel-agent-config
+                path: otel-agent-config.yaml
+        - name: otel-agent-extracfg-vol
+          configMap:
+            name: otel-agent-conf-${hash}
+            items:
+              - key: otel-agent-extracfg
+                path: extracfg.txt
+        - name: rootfs
+          hostPath:
+            path: /
+        - name: dockersock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: varlibdocker
+          hostPath:
+            path: /var/lib/docker
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: devdisk
+          hostPath:
+            path: /dev/disk/
+      serviceAccountName: ${service_account_name}
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      - operator: "Exists"
+        effect: "NoExecute"
+      - operator: "Exists"
+        effect: "NoSchedule"

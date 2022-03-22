@@ -1,0 +1,8 @@
+apiVersion: "allocation.agones.dev/v1"
+kind: GameServerAllocation
+spec:
+  selectors:
+    - matchLabels:
+        agones.dev/fleet: dgs-fleet
+  multiClusterSetting:
+    enabled: true

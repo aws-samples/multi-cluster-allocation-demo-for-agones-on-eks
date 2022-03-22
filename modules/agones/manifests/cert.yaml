@@ -1,0 +1,38 @@
+# Issue mTLS certificates for allocator service and its client using cert-manager
+# https://cert-manager.io/docs/usage/certificate/
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${allocator_server_cert_name}
+  namespace: ${namespace}
+spec:
+  # Set dnsName as ELB domain name
+  dnsNames:
+    - "*.elb.${aws_region}.amazonaws.com"
+  secretName: ${allocator_server_cert_name}
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+  duration: 87600h
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${allocator_client_cert_name}
+  namespace: ${namespace}
+spec:
+  # You can use arbitrary CN for a client certificate.
+  commonName: allocation-ca
+  secretName: ${allocator_client_cert_name}
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+  duration: 87600h
+---
