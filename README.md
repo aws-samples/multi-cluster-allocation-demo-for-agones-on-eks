@@ -8,6 +8,13 @@ This sample also works as a good Terraform example for the following features:
 * View Kubernetes resources with [Kubernetes Dashboard](https://github.com/kubernetes/dashboard)
 * Adjust the number of nodes by [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md)
 
+## Architecture / How it works
+The architecture overview of this sample is as the image below. 
+
+![overview](imgs/overview.png)
+
+We adopt a cluster topology of *Dedicated Cluster Responsible For Routing*, [which is disscussed here](https://github.com/googleforgames/agones/issues/597). By this way, your cluster configurations are symmetric - all the DGS clusters can share the same configuration, which is simpler than the toplogy *Single Cluster Responsible For Routing* with a special DGS cluster to perform serving game servers as well as allocation routing function. *All Clusters Responsible For Routing* topology seems overkill for a single region deployment, because it is unlikely for only a single cluster to fail while other clusters in the same region are working normally. It might improve availability with multi-region deployment though.
+
 ## Steps to Deploy
 ### Prerequisites
 You must install the following tools before deploying this sample:
@@ -186,13 +193,6 @@ locals {
   dgs_clusters = [module.dgs01, module.dgs02, module.dgs03]
 }
 ```
-
-## Architecture / How it works
-The architecture overview of this sample is as the image below. 
-
-![overview](imgs/overview.png)
-
-We adopt a cluster topology of *Dedicated Cluster Responsible For Routing*, [which is disscussed here](https://github.com/googleforgames/agones/issues/597). By this way, your cluster configurations are symmetric - all the DGS clusters can share the same configuration, which is simpler than the toplogy *Single Cluster Responsible For Routing* with a special DGS cluster to perform serving game servers as well as allocation routing function. *All Clusters Responsible For Routing* topology seems overkill for a single region deployment, because it is unlikely for only a single cluster to fail while other clusters in the same region are working normally. It might improve availability with multi-region deployment though.
 
 ## Clean up
 To avoid incurring future charges, clean up the resources you created.
