@@ -16,7 +16,7 @@ resource "helm_release" "this" {
 
   # Note that supecific kubernetes version is supported on each helm version
   # https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#releases
-  version          = "9.13.1"
+  version          = "9.19.1"
   create_namespace = false
 
   set {
@@ -49,6 +49,7 @@ data "aws_iam_policy_document" "this" {
       "autoscaling:DescribeLaunchConfigurations",
       "autoscaling:DescribeTags",
       "ec2:DescribeLaunchTemplateVersions",
+      "ec2:DescribeInstanceTypes",
     ]
     resources = ["*"]
   }
@@ -58,6 +59,7 @@ data "aws_iam_policy_document" "this" {
     actions = [
       "autoscaling:SetDesiredCapacity",
       "autoscaling:TerminateInstanceInAutoScalingGroup",
+      "ec2:DescribeInstanceTypes",
       "autoscaling:UpdateAutoScalingGroup",
     ]
     resources = ["*"]

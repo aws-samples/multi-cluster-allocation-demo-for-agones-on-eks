@@ -285,7 +285,7 @@ spec:
     spec:
       containers:
       - name: fluent-bit
-        image: amazon/aws-for-fluent-bit:2.22.0
+        image: amazon/aws-for-fluent-bit:2.26.0
         imagePullPolicy: IfNotPresent
         env:
             - name: AWS_REGION
