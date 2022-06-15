@@ -22,7 +22,7 @@ spec:
             effect: "NoExecute"
           containers:
           - name: dgs
-            image: gcr.io/agones-images/simple-game-server:0.6
+            image: gcr.io/agones-images/simple-game-server:0.13
             args: ["7654", "true"]
             env:
             resources:
