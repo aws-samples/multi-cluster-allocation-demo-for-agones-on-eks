@@ -83,7 +83,9 @@ module "agones_system_node_group" {
   min_size               = 1
   max_size               = 10
   desired_size           = 1
-  instance_types         = ["t3.large"]
+  # ami_type               = "AL2_ARM_64"
+  # instance_types         = ["t4g.large"]
+  instance_types = ["t3.medium"]
   subnet_ids             = var.vpc.private_subnets
   vpc_id                 = var.vpc.vpc_id
   vpc_security_group_ids = [var.node_security_group_id]
@@ -131,12 +133,8 @@ module "agones_gameserver_node_group" {
   min_size       = 0
   max_size       = 30
   desired_size   = 0
-  instance_types = ["c5.large"]
-  # To use Graviton2, uncomment lines below.
-  # Note that currently Agones does not support ARM environment, so it won't launch pods.
-  # https://github.com/googleforgames/agones/issues/2216
-  # ami_type = "AL2_ARM_64"
-  # instance_types = ["t4g.medium"]
+  ami_type = "AL2_ARM_64"
+  instance_types = ["t4g.medium"]
 
   subnet_ids = var.vpc.public_subnets
   vpc_id     = var.vpc.vpc_id
