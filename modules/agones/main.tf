@@ -80,12 +80,12 @@ module "agones_system_node_group" {
   name         = var.namespace
   cluster_name = var.cluster_name
 
-  min_size               = 1
-  max_size               = 10
-  desired_size           = 1
+  min_size     = 1
+  max_size     = 10
+  desired_size = 1
   # ami_type               = "AL2_ARM_64"
   # instance_types         = ["t4g.large"]
-  instance_types = ["t3.medium"]
+  instance_types         = ["t3.medium"]
   subnet_ids             = var.vpc.private_subnets
   vpc_id                 = var.vpc.vpc_id
   vpc_security_group_ids = [var.node_security_group_id]
@@ -133,7 +133,7 @@ module "agones_gameserver_node_group" {
   min_size       = 0
   max_size       = 30
   desired_size   = 0
-  ami_type = "AL2_ARM_64"
+  ami_type       = "AL2_ARM_64"
   instance_types = ["t4g.medium"]
 
   subnet_ids = var.vpc.public_subnets
