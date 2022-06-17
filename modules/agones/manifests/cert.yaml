@@ -17,6 +17,7 @@ spec:
   dnsNames:
     - "*.elb.${aws_region}.amazonaws.com"
   secretName: ${allocator_server_cert_name}
+  commonName: allocation-ca
   issuerRef:
     name: selfsigned
     kind: ClusterIssuer
