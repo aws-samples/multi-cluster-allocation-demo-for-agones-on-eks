@@ -46,7 +46,7 @@ resource "aws_kms_key" "this" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "18.8.1"
+  version = "18.23.0"
 
   cluster_version = "1.22"
   cluster_name    = var.cluster_name
@@ -107,7 +107,8 @@ module "eks" {
   eks_managed_node_groups = {
     default = {
       desired_size   = 1
-      instance_types = ["t3.medium"]
+      ami_type       = "AL2_ARM_64"
+      instance_types = ["t4g.medium"]
       subnet_ids     = var.vpc.private_subnets
     }
   }

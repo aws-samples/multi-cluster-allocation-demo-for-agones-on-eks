@@ -42,7 +42,7 @@ resource "helm_release" "this" {
   repository    = "https://agones.dev/chart/stable"
   name          = "agones"
   chart         = "agones"
-  version       = "1.23.0"
+  version       = "1.24.0-rc"
   wait_for_jobs = true
 
   # Use set block for certificates as yaml multiline string is bothering
@@ -83,9 +83,8 @@ module "agones_system_node_group" {
   min_size     = 1
   max_size     = 10
   desired_size = 1
-  # ami_type               = "AL2_ARM_64"
-  # instance_types         = ["t4g.large"]
-  instance_types         = ["t3.medium"]
+  ami_type               = "AL2_ARM_64"
+  instance_types         = ["t4g.large"]
   subnet_ids             = var.vpc.private_subnets
   vpc_id                 = var.vpc.vpc_id
   vpc_security_group_ids = [var.node_security_group_id]
