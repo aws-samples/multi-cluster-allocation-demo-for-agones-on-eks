@@ -80,9 +80,9 @@ module "agones_system_node_group" {
   name         = var.namespace
   cluster_name = var.cluster_name
 
-  min_size     = 1
-  max_size     = 10
-  desired_size = 1
+  min_size               = 1
+  max_size               = 10
+  desired_size           = 1
   ami_type               = "AL2_ARM_64"
   instance_types         = ["t4g.large"]
   subnet_ids             = var.vpc.private_subnets
