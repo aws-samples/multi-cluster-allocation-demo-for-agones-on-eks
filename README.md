@@ -123,7 +123,7 @@ curl --key ${KEY_FILE} \
      -H "Content-Type: application/json" \
      --data '{"namespace":"'${NAMESPACE}'", "multiClusterSetting":{"enabled":true}}' \
      https://${EXTERNAL_IP}/gameserverallocation \
-     -X POST -v 
+     -v
 ```
 
 Note that the allocation request is forwarded from routing cluster to DGS clusters with Agones multi-cluster allocation feature.
