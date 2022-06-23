@@ -42,7 +42,7 @@ resource "helm_release" "this" {
   repository    = "https://agones.dev/chart/stable"
   name          = "agones"
   chart         = "agones"
-  version       = "1.24.0-rc"
+  version       = "1.24.0"
   wait_for_jobs = true
 
   # Use set block for certificates as yaml multiline string is bothering
