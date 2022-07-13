@@ -73,7 +73,7 @@ data "kubectl_path_documents" "karpenter_provisioner" {
 
 resource "kubectl_manifest" "karpenter_provisioner" {
   depends_on = [helm_release.this]
-  # spec.provider is deprecated, use AWSNodeTemplate
+  # TODO spec.provider is deprecated, use AWSNodeTemplate
   yaml_body = <<YAML
 apiVersion: karpenter.sh/v1alpha5
 kind: Provisioner
