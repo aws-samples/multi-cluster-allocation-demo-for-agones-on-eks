@@ -23,8 +23,6 @@ spec:
               requests:
                 memory: "64Mi"
                 cpu: "50m"
-          # nodeSelector:
-          #   usage: gameserver
           tolerations:
           - key: "gameserver"
             operator: "Exists"

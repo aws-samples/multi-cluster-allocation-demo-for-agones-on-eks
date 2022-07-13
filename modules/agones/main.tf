@@ -173,10 +173,6 @@ module "agones_gameserver_node_group" {
   security_group_tags = {
     "karpenter.sh/discovery/${var.cluster_name}" = var.cluster_name
   }
-
-  labels = {
-    # "usage" = "gameserver"
-  }
 }
 
 # Tag required for Scaling from zero and Node selector

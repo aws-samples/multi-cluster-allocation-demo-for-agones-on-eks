@@ -138,12 +138,6 @@ module "eks" {
   }
 }
 
-#module "cluster_autoscaler" {
-#  source = "../cluster_autoscaler"
-#  oidc_provider = module.eks.oidc_provider
-#  cluster_name  = module.eks.cluster_id
-#}
-
 module "karpenter" {
   source            = "../karpenter"
   cluster_name      = var.cluster_name
