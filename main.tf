@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "aws"
-      version = "~> 3.72.0"
+      version = "~> 4.22.0"
     }
   }
 }
@@ -55,16 +55,21 @@ module "vpc" {
 resource "aws_s3_bucket" "log_bucket" {
   bucket_prefix = "log-bucket"
   force_destroy = true
+}
 
-  versioning {
-    enabled = true
+resource "aws_s3_bucket_versioning" "log_bucket" {
+  bucket = aws_s3_bucket.log_bucket.id
+  versioning_configuration {
+    status = "Enabled"
   }
+}
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+resource "aws_s3_bucket_server_side_encryption_configuration" "log_bucket" {
+  bucket = aws_s3_bucket.log_bucket.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
 }

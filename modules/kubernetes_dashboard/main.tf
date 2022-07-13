@@ -38,6 +38,7 @@ resource "kubectl_manifest" "this" {
   yaml_body  = element(data.kubectl_path_documents.this.documents, count.index)
 }
 
+# 8443 port already allowed in dgs_cluster and routing cluster
 # https://artifacthub.io/packages/helm/metrics-server/metrics-server
 resource "helm_release" "metrics_server" {
   name             = "metrics-server"
@@ -46,22 +47,4 @@ resource "helm_release" "metrics_server" {
   chart            = "metrics-server"
   version          = "3.8.1"
   create_namespace = true
-}
-
-resource "aws_security_group_rule" "dashboard" {
-  type                     = "ingress"
-  from_port                = 8443
-  to_port                  = 8443
-  protocol                 = "tcp"
-  security_group_id        = var.node_security_group_id
-  source_security_group_id = var.cluster_security_group_id
-}
-
-resource "aws_security_group_rule" "metrics_server" {
-  type                     = "ingress"
-  from_port                = 4443
-  to_port                  = 4443
-  protocol                 = "tcp"
-  security_group_id        = var.node_security_group_id
-  source_security_group_id = var.cluster_security_group_id
 }

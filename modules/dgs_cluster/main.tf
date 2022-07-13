@@ -87,38 +87,72 @@ module "eks" {
 
   node_security_group_additional_rules = {
     # Allow all the traffic between each node
-    "ingress_all" = {
+    ingress_all = {
       type      = "ingress"
       from_port = 0
       to_port   = 65535
-      protocol  = "-1"
+      protocol  = "all"
       self      = true
     }
 
-    "egress_all" = {
+    egress_all = {
       type      = "egress"
       from_port = 0
       to_port   = 65535
-      protocol  = "-1"
+      protocol  = "all"
       self      = true
     }
+    # Control plane invoke Karpenter webhook
+    ingress_karpenter_webhook_tcp = {
+      description                   = "Cluster API to Node group for Karpenter webhook"
+      protocol                      = "tcp"
+      from_port                     = 8443
+      to_port                       = 8443
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+  }
+
+  node_security_group_tags = {
+    "karpenter.sh/discovery/${var.cluster_name}" = var.cluster_name
   }
 
   eks_managed_node_groups = {
     default = {
-      desired_size   = 1
-      ami_type       = "AL2_ARM_64"
-      instance_types = ["t4g.medium"]
-      subnet_ids     = var.vpc.private_subnets
+      desired_size          = 1
+      ami_type              = "AL2_ARM_64"
+      instance_types        = ["t4g.medium"]
+      subnet_ids            = var.vpc.private_subnets
+      create_security_group = false
+
+      iam_role_additional_policies = [
+        # Required by Karpenter
+        "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      ]
     }
+  }
+
+  tags = {
+    # using subnetSelector/securityGroupSelector at Provisioner
+    "karpenter.sh/discovery/${var.cluster_name}" = var.cluster_name
   }
 }
 
-module "cluster_autoscaler" {
-  source = "../cluster_autoscaler"
+#module "cluster_autoscaler" {
+#  source = "../cluster_autoscaler"
+#  oidc_provider = module.eks.oidc_provider
+#  cluster_name  = module.eks.cluster_id
+#}
 
-  oidc_provider = module.eks.oidc_provider
-  cluster_name  = module.eks.cluster_id
+module "karpenter" {
+  source            = "../karpenter"
+  cluster_name      = var.cluster_name
+  cluster_id        = module.eks.cluster_id
+  cluster_endpoint  = module.eks.cluster_endpoint
+  iam_role_arn      = module.eks.eks_managed_node_groups["default"].iam_role_arn
+  iam_role_name     = module.eks.eks_managed_node_groups["default"].iam_role_name
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  public_subnet_ids = var.vpc.public_subnets
 }
 
 module "aws_otel" {
