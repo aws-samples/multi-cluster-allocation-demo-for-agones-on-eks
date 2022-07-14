@@ -6,7 +6,7 @@ This sample also works as a good Terraform example for the following features:
 * Deploy Agones with Network Load Balancer (NLB) instead of Classic Load Balancer with [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/)
 * Aggregate logs and metrics into Amazon CloudWatch using [Fluent Bit](https://fluentbit.io/) and [OpenTelemetry](https://aws-otel.github.io/)
 * View Kubernetes resources with [Kubernetes Dashboard](https://github.com/kubernetes/dashboard)
-* Adjust the number of nodes by [Cluster Autoscaler](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/aws/README.md)
+* Adjust the number of nodes by [Karpenter](https://karpenter.sh/) (You can also see cluster autoscaler version [in this tag](https://github.com/aws-samples/multi-cluster-allocation-demo-for-agones-on-eks/tree/cluster_autoscaler))
 
 ## Architecture / How it works
 The architecture overview of this sample is as the image below. 
