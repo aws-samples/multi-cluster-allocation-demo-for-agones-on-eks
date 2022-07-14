@@ -73,7 +73,6 @@ data "kubectl_path_documents" "karpenter_provisioner" {
 
 resource "kubectl_manifest" "karpenter_provisioner" {
   depends_on = [helm_release.this]
-  # TODO spec.provider is deprecated, use AWSNodeTemplate
   yaml_body = <<YAML
 apiVersion: karpenter.sh/v1alpha5
 kind: Provisioner
@@ -90,13 +89,25 @@ spec:
   limits:
     resources:
       cpu: 100
-  provider:
-    subnetSelector:
-      aws-ids: ${join(",", var.public_subnet_ids)}
-    securityGroupSelector:
-      karpenter.sh/discovery/${var.cluster_id}: ${var.cluster_id}
-    tags:
-      karpenter.sh/discovery/${var.cluster_id}: ${var.cluster_id}
+  providerRef:
+    name: default
   ttlSecondsAfterEmpty: 30
+YAML
+}
+
+resource "kubectl_manifest" "karpenter_aws_node_template" {
+  depends_on = [helm_release.this]
+  yaml_body = <<YAML
+apiVersion: karpenter.k8s.aws/v1alpha1
+kind: AWSNodeTemplate
+metadata:
+  name: default
+spec:
+  subnetSelector:
+    aws-ids: ${join(",", var.public_subnet_ids)}
+  securityGroupSelector:
+    karpenter.sh/discovery/${var.cluster_id}: ${var.cluster_id}
+  tags:
+    karpenter.sh/discovery/${var.cluster_id}: ${var.cluster_id}
 YAML
 }
