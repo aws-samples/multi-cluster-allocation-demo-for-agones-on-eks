@@ -164,14 +164,14 @@ module "agones_gameserver_node_group" {
       description = "Allow tcp/udp access from Internet to gameserver pods"
       from_port   = 7000
       to_port     = 8000
-      protocol    = "-1"
+      protocol    = "all"
       type        = "ingress"
       cidr_blocks = var.gameserver_allowed_cidrs
     }
   }
 
-  labels = {
-    "usage" = "gameserver"
+  security_group_tags = {
+    "karpenter.sh/discovery/${var.cluster_name}" = var.cluster_name
   }
 }
 

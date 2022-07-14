@@ -14,12 +14,6 @@ spec:
         protocol: TCPUDP
       template:
         spec:
-          nodeSelector:
-            usage: gameserver
-          tolerations:
-          - key: "gameserver"
-            operator: "Exists"
-            effect: "NoExecute"
           containers:
           - name: dgs
             image: gcr.io/agones-images/simple-game-server:0.13
@@ -29,6 +23,10 @@ spec:
               requests:
                 memory: "64Mi"
                 cpu: "50m"
+          tolerations:
+          - key: "gameserver"
+            operator: "Exists"
+            effect: "NoExecute"
 ---
 # https://agones.dev/site/docs/reference/fleetautoscaler/
 apiVersion: "autoscaling.agones.dev/v1"
