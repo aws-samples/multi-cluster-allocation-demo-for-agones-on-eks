@@ -48,3 +48,12 @@ resource "helm_release" "metrics_server" {
   version          = "3.8.1"
   create_namespace = true
 }
+
+resource "aws_security_group_rule" "metrics_server" {
+  type                     = "ingress"
+  from_port                = 4443
+  to_port                  = 4443
+  protocol                 = "tcp"
+  security_group_id        = var.node_security_group_id
+  source_security_group_id = var.cluster_security_group_id
+}
