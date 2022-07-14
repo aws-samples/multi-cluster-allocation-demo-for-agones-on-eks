@@ -73,7 +73,7 @@ data "kubectl_path_documents" "karpenter_provisioner" {
 
 resource "kubectl_manifest" "karpenter_provisioner" {
   depends_on = [helm_release.this]
-  yaml_body = <<YAML
+  yaml_body  = <<YAML
 apiVersion: karpenter.sh/v1alpha5
 kind: Provisioner
 metadata:
@@ -97,7 +97,7 @@ YAML
 
 resource "kubectl_manifest" "karpenter_aws_node_template" {
   depends_on = [helm_release.this]
-  yaml_body = <<YAML
+  yaml_body  = <<YAML
 apiVersion: karpenter.k8s.aws/v1alpha1
 kind: AWSNodeTemplate
 metadata:
