@@ -28,11 +28,11 @@ You must install the following tools before deploying this sample:
 ### Check Terraform parameters
 Please open [`variable.tf`](./variable.tf) and check the parameters.
 
-You can continue to deploy without any modification, but you may want to change AWS region to deploy.
-You can also strengthen your security by setting allowed CIDRs, but at least all the public interfaces are protected by authN/Z.
+You can continue to deploy without any modification, but you may want to change some of the settings such as AWS region to deploy.
+You can also improve the security by specifying CIDRs that can connect to servers. By default all the servers are protected by mTLS but can be connected from anyone.
 
 ### Deploy
-You can deploy this sample by running the following commands:
+To deploy this sample, you need to run the following commands:
 
 ```sh
 # Install required modules
@@ -44,7 +44,7 @@ terraform apply -auto-approve
 
 It usually takes 20-30 minutes to deploy.
 
-After it finishes, please check all the pods are running properly (i.e. `Running` state) by the following commands:
+After a deployment, please check all the pods are running properly (i.e. `Running` state) by the commands below:
 
 ```sh
 aws eks update-kubeconfig --name dgs01
@@ -59,29 +59,29 @@ kubectl get pods -A
 
 ## Usage
 ### Connect to a game server
-You can just follow [the official guide](https://agones.dev/site/docs/getting-started/create-gameserver/#2-fetch-the-gameserver-status) to connect to a game server.
+You can follow [the official guide](https://agones.dev/site/docs/getting-started/create-gameserver/#2-fetch-the-gameserver-status) to connect to a game server, or run the following commands:
 
 ```sh
 aws eks update-kubeconfig --name dgs01 # or --name dgs02
 kubectl get gs
 
 # you will get a output like below
-NAME                    STATE          ADDRESS                                          PORT   NODE                                        AGE
-dgs-fleet-2l7fs-8pjfb   Ready          ec2-<redacted>.us-west-2.compute.amazonaws.com   7684   ip-10-0-177-35.us-west-2.compute.internal   66m
-dgs-fleet-2l7fs-dtz7c   Ready          ec2-<redacted>.us-west-2.compute.amazonaws.com   7039   ip-10-0-177-35.us-west-2.compute.internal   66m
+NAME                    STATE          ADDRESS                                        PORT   NODE                                        AGE
+dgs-fleet-2l7fs-8pjfb   Ready          ec2-redacted.us-west-2.compute.amazonaws.com   7684   ip-10-0-177-35.us-west-2.compute.internal   66m
+dgs-fleet-2l7fs-dtz7c   Ready          ec2-redacted.us-west-2.compute.amazonaws.com   7039   ip-10-0-177-35.us-west-2.compute.internal   66m
 
 # get IP address and PORT number from the above output
-nc -u {IP} {PORT}
+nc -u {ADDRESS} {PORT}
 
 # now you can send some message and see ACK is returned
 ```
 
-As a sample game server, we are running [simple-game-server](https://github.com/googleforgames/agones/tree/main/examples/simple-game-server). You can check the available commands in the document.
+As a sample game server, we are running [simple-game-server](https://github.com/googleforgames/agones/tree/main/examples/simple-game-server). The available commands are described in the `README.md`.
 
 ### Allocate a game server
 You can allocate a game server pod either by using [`GameServerAllocation` API aggregation](https://agones.dev/site/docs/reference/gameserverallocation/) or [allocator service client](https://agones.dev/site/docs/advanced/multi-cluster-allocation/#allocate-multi-cluster).
 
-To use GameServerAllocation API, run the following command:
+To use GameServerAllocation API aggregation, run the following command:
 
 ```sh
 aws eks update-kubeconfig --name router
@@ -96,7 +96,7 @@ aws eks update-kubeconfig --name dgs02
 kubectl get gs
 ```
 
-To use allocator service client, run the following command below. You can either use gRPC or REST interface.
+To use an allocator service client, run the following commands. You can either use gRPC or REST interface. Since they are protected by mTLS, you need to set up TLS certificates and private keys first. 
 
 ```sh
 NAMESPACE=default # replace with any namespace
@@ -126,7 +126,7 @@ curl --key ${KEY_FILE} \
      -v
 ```
 
-Note that the allocation request is forwarded from routing cluster to DGS clusters with Agones multi-cluster allocation feature.
+Note that allocation requests are forwarded from the routing cluster to the DGS clusters with Agones multi-cluster allocation feature.
 
 ### Open Kubernetes Dashboard
 You can open Kubernetes dashboard to see and manage Kubernetes resources in detail.
@@ -142,16 +142,16 @@ kubectl -n kubernetes-dashboard get secret $(kubectl -n kubernetes-dashboard get
 ```
 
 ### Monitor logs and metrics in CloudWatch
-Because Agones logs and metrics are aggregated into CloudWatch in this sample, you can easily check them in [CloudWatch management console](https://console.aws.amazon.com/cloudwatch/home).
+Agones logs and metrics are aggregated into CloudWatch in this sample. You can easily check them in [CloudWatch management console](https://console.aws.amazon.com/cloudwatch/home).
 
-To check logs, you can open `Log groups` page, and open log groups named for example `/aws/containerinsights/dgs01/application`.
+To check logs, you can open `Log groups` page, and inspect relevant log groups (e.g. `/aws/containerinsights/dgs01/application`.)
 
 ![log_groups](imgs/log_groups.png)
 
-Here you can see application logs streamed nearly realtime fro a cluster by Fluent Bit. You can configure which logs are ingested and excluded by modifying [`modules/fluent_bit/manifests`](./modules/fluent_bit/manifests/fluent_bit.yaml). Please also check [the official document](https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/classic-mode/configuration-file) for further detail.
+Here you can see application logs ingested nearly realtime by Fluent Bit. You can configure which logs should be included or excluded by modifying [`modules/fluent_bit/manifests`](./modules/fluent_bit/manifests/fluent_bit.yaml). Please also check [the official document](https://docs.fluentbit.io/manual/administration/configuring-fluent-bit/classic-mode/configuration-file) for further detail.
 
-To check metrics, you can either open `All metrics` page or `Dashboards` page from CloudWatch management console.
-In All metrics page, you can check each metric one by one, which can be useful to check metrics in ad-hoc manner.
+For metrics, you can either open `All metrics` page or `Dashboards` page from CloudWatch management console.
+In All metrics page, you can check each metric one by one, which can be useful to check metrics in an ad-hoc manner.
 
 In CloudWatch Dashboards page, you can create a dashboard to monitor all the required metrics at a glance.
 This sample includes a sample dashboard for monitoring Agones. You can import the dashboard by the following command:
@@ -160,7 +160,7 @@ This sample includes a sample dashboard for monitoring Agones. You can import th
 aws cloudwatch put-dashboard --dashboard-name agones-demo-dashboard --dashboard-body file://exmaple/dashboard.json
 ```
 
-Note that AWS region `us-west-2` is hard-coded in `dashboard.json`. If you deployed this sample in other regions, please replace it before creating dashboard.
+Note that AWS region `us-west-2` is hard-coded in `dashboard.json`. If you deployed this sample in other regions, please replace it before creating a dashboard.
 
 After `put-dashboard` successed, now you can open the imported dashboard from CloudWatch management console.
 
@@ -173,9 +173,9 @@ The main document for AWS Distro for OpenTelemetry [is here](https://aws-otel.gi
 You can also refer to the URLs commented in the file for further detail of each configs.  
 
 ### Add more DGS clusters
-Currently there is only two DGS clusters but you can add them more.
+Currently there are only two DGS clusters, but you can add more of them easily.
 
-To add a DGS cluster, open [`main.tf`](./main.tf) and add another `./modules/dgs_cluster` module. You also need to add the module to `local.dgs_clusters` list variable.
+To add a DGS cluster, open [`main.tf`](./main.tf) and declare another instance of `./modules/dgs_cluster` module. You also need to add the module to `local.dgs_clusters` list variable.
 
 ```tf
 # Add this
